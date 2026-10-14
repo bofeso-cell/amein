@@ -1,0 +1,17 @@
+{
+  "name": "AMEIN – Guia de Orações",
+  "short_name": "AMEIN",
+  "description": "Orações, terço passo a passo, santos e eventos das igrejas e comunidades de fé.",
+  "lang": "pt-BR",
+  "start_url": "./#oracoes",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f3ea",
+  "theme_color": "#1f4d2b",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

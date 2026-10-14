@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Gerador de Voz – AMEIN</title>
+<style>
+:root{--bg:#f7f3ea;--tx:#22301f;--nv:#1f4d2b;--card:#fffdf8;--gd:#b8901c;--wn:#8a3a2a;--ln:#e3dcc8}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:1.05rem/1.55 Georgia,serif}
+main{max-width:860px;margin:0 auto;padding:22px 16px 60px}
+h1{color:var(--nv);margin:.2em 0}h2{color:var(--nv);font-size:1.3rem;margin:1.4em 0 .4em}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:16px 18px;margin:12px 0}
+label{display:block;font-weight:700;margin-top:10px}
+input,select{font:inherit;width:100%;padding:9px 11px;border:2px solid var(--ln);border-radius:10px;background:#fff;color:var(--tx)}
+input[type=checkbox]{width:auto;transform:scale(1.25);margin-right:8px}
+.btn{font:inherit;font-weight:700;background:var(--nv);color:#fff;border:0;border-radius:10px;padding:11px 20px;cursor:pointer}
+.btn.alt{background:none;color:var(--nv);border:2px solid var(--nv)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.mut{opacity:.8;font-size:.92rem}
+.err{color:var(--wn);font-weight:700}
+.it{display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--ln)}
+.it label{margin:0;font-weight:400;display:flex;align-items:center;flex:1;cursor:pointer}
+.st{font-size:.85rem;border-radius:999px;padding:1px 10px;white-space:nowrap}
+.st.ok{background:#dbeedd;color:#1f4d2b}.st.old{background:#f6e2c4;color:#7a4a00}.st.no{background:#eee;color:#555}.st.new{background:var(--gd);color:#000}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}@media(max-width:640px){.cols{grid-template-columns:1fr}}
+code{background:#efe9da;padding:1px 6px;border-radius:6px}
+#log{white-space:pre-wrap;font:.88rem/1.4 ui-monospace,monospace;max-height:220px;overflow:auto;background:#fff;border:1px solid var(--ln);border-radius:10px;padding:10px;margin-top:10px}
+</style>
+</head>
+<body>
+<main>
+<h1>Gerador de Voz Profissional</h1>
+<p class="mut">Ferramenta só do administrador. Gera os áudios MP3 das orações com voz neural do Azure, junto com o tempo de cada palavra (para a bolinha acompanhar a leitura). A sua chave fica só neste computador.</p>
+
+<h2>1. Chave do Azure</h2>
+<div class="card">
+ <label for="key">Chave (KEY 1)</label><input id="key" type="password" autocomplete="off" placeholder="Cole aqui a chave do recurso de Fala (Speech)">
+ <label for="reg">Região (Location/Region)</label><input id="reg" placeholder="Ex.: brazilsouth ou eastus" autocapitalize="none">
+ <div class="row"><label style="margin:0;font-weight:400;display:flex;align-items:center"><input id="lembrar" type="checkbox">Lembrar neste computador</label></div>
+</div>
+
+<h2>2. Voz</h2>
+<div class="card">
+ <label for="voz">Voz</label>
+ <select id="voz">
+  <option value="pt-BR-FranciscaNeural">Francisca (feminina, calma) – recomendada</option>
+  <option value="pt-BR-AntonioNeural">Antônio (masculina)</option>
+  <option value="pt-BR-ThalitaMultilingualNeural">Thalita (feminina, jovem)</option>
+  <option value="outra">Outra (digitar o nome)</option>
+ </select>
+ <input id="vozx" placeholder="Nome da voz, ex.: pt-BR-BrendaNeural" style="display:none;margin-top:8px">
+ <label for="vel">Velocidade</label>
+ <select id="vel"><option value="-15%">Bem devagar</option><option value="-8%" selected>Devagar (recomendado para orações)</option><option value="0%">Normal</option></select>
+ <div class="row"><button class="btn alt" id="amostra">▶ Ouvir amostra</button><span id="amostraMsg" class="mut"></span></div>
+ <p class="mut">Use sempre a mesma voz em todas as orações, para o site ficar com uma identidade só.</p>
+</div>
+
+<h2>3. Orações e santos</h2>
+<div class="card">
+ <p id="carga" class="mut">Carregando as orações do site...</p>
+ <div id="arquivo" style="display:none"><p class="err">Não consegui ler o site automaticamente.</p><label for="fidx">Escolha o arquivo index.html do seu computador</label><input id="fidx" type="file" accept=".html,text/html"></div>
+ <div class="row" id="atalhos" style="display:none;margin-top:0"><button class="btn alt" id="selFalta">Marcar as que faltam</button><button class="btn alt" id="selNada">Desmarcar tudo</button></div>
+ <div id="lista" class="cols"></div>
+ <p class="mut"><span class="st ok">com voz</span> já tem áudio atualizado · <span class="st old">texto mudou</span> o texto foi editado e precisa gerar de novo · <span class="st no">sem voz</span> ainda não tem.</p>
+</div>
+
+<h2>4. Gerar e baixar</h2>
+<div class="card">
+ <div class="row" style="margin-top:0"><button class="btn" id="gerar">Gerar áudios marcados</button><button class="btn alt" id="baixar" disabled>⬇ Baixar pacote .zip</button></div>
+ <div id="log">Pronto.</div>
+ <p class="mut">Depois de baixar: descompacte o .zip e copie os arquivos de dentro da pasta <code>audio</code> do pacote para a pasta <code>audio</code> do site, junto do index.html. Quando o computador perguntar, escolha <b>substituir</b> (o <code>vozes.json</code> novo já inclui as vozes antigas). Não apague os MP3 que já estavam lá. Publique o site de novo. Pronto: quem tem Premium já ouve a voz nova.</p>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const ld=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const log=t=>{const l=$('#log');l.textContent+= '\n'+t;l.scrollTop=l.scrollHeight};
+
+/* ---------- configurações guardadas ---------- */
+const CF=ld('gv',{});
+if(CF.key){$('#key').value=CF.key;$('#lembrar').checked=true}
+if(CF.reg)$('#reg').value=CF.reg;
+if(CF.voz){if([...$('#voz').options].some(o=>o.value===CF.voz))$('#voz').value=CF.voz;else{$('#voz').value='outra';$('#vozx').value=CF.voz;$('#vozx').style.display=''}}
+if(CF.vel)$('#vel').value=CF.vel;
+$('#voz').onchange=()=>{$('#vozx').style.display=$('#voz').value==='outra'?'':'none'};
+const voz=()=>$('#voz').value==='outra'?$('#vozx').value.trim():$('#voz').value;
+function guarda(){sv('gv',{key:$('#lembrar').checked?$('#key').value.trim():'',reg:$('#reg').value.trim(),voz:voz(),vel:$('#vel').value})}
+
+/* ---------- textos do site ---------- */
+let ITENS=[],HASH=null,VOZES={},NOVOS={};
+async function carregaSite(html){
+ const f=document.createElement('iframe');f.style.display='none';f.setAttribute('aria-hidden','true');
+ document.body.appendChild(f);
+ await new Promise(r=>{f.onload=r;f.srcdoc=html});
+ await new Promise(r=>setTimeout(r,300));
+ const w=f.contentWindow;
+ ITENS=w.eval('[...ORA.map(o=>({id:o.id,n:o.n,x:o.x,g:"Orações"})),...SAN.map(o=>({id:o.id,n:o.n,x:o.x,g:"Santos"}))]');
+ HASH=w.eval('hashTxt');
+ if(!ITENS.length||typeof HASH!=='function')throw new Error('não achei as orações');
+}
+async function inicia(){
+ try{
+  const r=await fetch('index.html',{cache:'no-cache'});if(!r.ok)throw 0;
+  await carregaSite(await r.text());
+ }catch(e){$('#carga').style.display='none';$('#arquivo').style.display='';return}
+ try{const r=await fetch('audio/vozes.json',{cache:'no-cache'});if(r.ok)VOZES=await r.json()||{}}catch(e){}
+ mostra();
+}
+$('#fidx').onchange=async e=>{const fl=e.target.files[0];if(!fl)return;try{await carregaSite(await fl.text());$('#arquivo').style.display='none';mostra()}catch(x){alert('Esse arquivo não parece ser o index.html do AMEIN.')}};
+function estado(o){if(NOVOS[o.id])return['new','gerado agora'];const a=VOZES[o.id];if(!a)return['no','sem voz'];return a.h===HASH(o.x)?['ok','com voz']:['old','texto mudou']}
+function mostra(){
+ $('#carga').style.display='none';$('#atalhos').style.display='';
+ const marcados=new Set([...document.querySelectorAll('#lista input:checked')].map(i=>i.value));
+ const primeira=!document.querySelector('#lista input');
+ const pre=['pai','ave','francisco']; /* as três primeiras com voz profissional */
+ $('#lista').innerHTML=ITENS.map(o=>{const[c,t]=estado(o);const chk=primeira?(pre.includes(o.id)&&c!=='ok'):marcados.has(o.id);
+  return `<div class="it"><label><input type="checkbox" value="${esc(o.id)}" ${chk?'checked':''}>${esc(o.n)}</label><span class="st ${c}">${t}</span></div>`}).join('');
+}
+$('#selFalta').onclick=()=>document.querySelectorAll('#lista input').forEach(i=>{const o=ITENS.find(x=>x.id===i.value);i.checked=['no','old'].includes(estado(o)[0])});
+$('#selNada').onclick=()=>document.querySelectorAll('#lista input').forEach(i=>i.checked=false);
+
+/* ---------- Azure ---------- */
+function cfgAzure(){
+ const key=$('#key').value.trim(),reg=$('#reg').value.trim().toLowerCase().replace(/\s+/g,'');
+ if(!key||!reg){alert('Preencha a chave e a região do Azure (passo 1).');return null}
+ if(!window.SpeechSDK){alert('Não consegui carregar a biblioteca do Azure. Verifique a internet e recarregue a página.');return null}
+ guarda();
+ const c=SpeechSDK.SpeechConfig.fromSubscription(key,reg);
+ c.speechSynthesisOutputFormat=SpeechSDK.SpeechSynthesisOutputFormat.Audio24Khz48KBitRateMonoMp3;
+ return c;
+}
+const xml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+function ssml(texto){
+ const corpo=String(texto).split('\n').map(xml).join(' <break time="450ms"/> ');
+ return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="pt-BR"><voice name="${xml(voz())}"><prosody rate="${$('#vel').value}">${corpo}</prosody></voice></speak>`;
+}
+function sintetiza(texto){
+ return new Promise((ok,falha)=>{
+  const cf=cfgAzure();if(!cf)return falha(new Error('configuração'));
+  const s=new SpeechSDK.SpeechSynthesizer(cf,null),B=[];
+  s.wordBoundary=(_,e)=>{
+   const tipo=SpeechSDK.SpeechSynthesisBoundaryType;
+   if(tipo&&e.boundaryType!==undefined&&e.boundaryType!==tipo.Word)return;
+   B.push({ms:e.audioOffset/1e4,t:e.text||''});
+  };
+  s.speakSsmlAsync(ssml(texto),r=>{
+   s.close();
+   if(r.reason===SpeechSDK.ResultReason.SynthesizingAudioCompleted)ok({audio:r.audioData,B,dur:(r.audioDuration||0)/1e4});
+   else{const d=SpeechSDK.CancellationDetails.fromResult(r);falha(new Error(d&&d.errorDetails||'falhou'))}
+  },e=>{s.close();falha(new Error(e))});
+ });
+}
+/* Liga cada palavra do texto do site ao momento em que ela é falada no áudio. */
+const nz=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function alinha(texto,B,dur){
+ const T=String(texto).match(/\S+/g)||[],w=new Array(T.length).fill(null);let j=0;
+ for(const b of B){
+  const bt=nz(b.t);if(!bt)continue;
+  for(let k=j;k<Math.min(j+5,T.length);k++){
+   const tk=nz(T[k]);if(!tk)continue;
+   if(tk===bt||tk.startsWith(bt)||tk.includes(bt)){if(w[k]==null)w[k]=Math.round(b.ms);j=(tk===bt||tk.endsWith(bt))?k+1:k;break}
+  }
+ }
+ /* preenche as que ficaram sem tempo (raro) e garante a ordem */
+ const fim=dur||((B.length?B[B.length-1].ms:0)+800);
+ for(let k=0;k<w.length;k++){
+  if(w[k]!=null)continue;
+  let a=k-1;while(a>=0&&w[a]==null)a--;let z=k+1;while(z<w.length&&w[z]==null)z++;
+  const t0=a>=0?w[a]:0,t1=z<w.length?w[z]:fim;w[k]=Math.round(t0+(t1-t0)*(k-a)/(z-a));
+ }
+ for(let k=1;k<w.length;k++)if(w[k]<w[k-1])w[k]=w[k-1];
+ const sem=w.length?B.filter(b=>nz(b.t)).length:0;
+ return {w,ok:sem};
+}
+
+$('#amostra').onclick=async()=>{
+ const b=$('#amostra');b.disabled=true;$('#amostraMsg').textContent='Gerando...';
+ try{const r=await sintetiza('Pai nosso que estais no céu, santificado seja o vosso nome.');const u=URL.createObjectURL(new Blob([r.audio],{type:'audio/mpeg'}));new Audio(u).play();$('#amostraMsg').textContent='Tocando a amostra.'}
+ catch(e){$('#amostraMsg').textContent='Erro: '+e.message+' (confira a chave, a região e o nome da voz).'}
+ b.disabled=false;
+};
+
+$('#gerar').onclick=async()=>{
+ const ids=[...document.querySelectorAll('#lista input:checked')].map(i=>i.value);
+ if(!ids.length)return alert('Marque pelo menos uma oração.');
+ if(!cfgAzure())return;
+ const g=$('#gerar');g.disabled=true;$('#log').textContent='Gerando '+ids.length+' áudio(s) com a voz '+voz()+'...';
+ for(const id of ids){
+  const o=ITENS.find(x=>x.id===id);
+  try{
+   const r=await sintetiza(o.x),al=alinha(o.x,r.B,r.dur);
+   NOVOS[id]={mp3:r.audio,meta:{h:HASH(o.x),v:voz(),d:Math.round(r.dur),w:al.w}};
+   log(`✔ ${o.n}: ${(r.audio.byteLength/1024).toFixed(0)} KB, ${(r.dur/1000).toFixed(0)} s, ${al.w.length} palavras`);
+   const u=URL.createObjectURL(new Blob([r.audio],{type:'audio/mpeg'}));
+   const p=document.createElement('audio');p.controls=true;p.src=u;p.style.cssText='width:100%;margin:4px 0 8px';$('#log').after(p);
+  }catch(e){log(`✖ ${o.n}: ${e.message}`)}
+ }
+ g.disabled=false;$('#baixar').disabled=!Object.keys(NOVOS).length;mostra();
+ log('Terminado. Ouça os áudios abaixo e, se estiver bom, clique em "Baixar pacote .zip".');
+};
+
+$('#baixar').onclick=async()=>{
+ const z=new JSZip(),todos={...VOZES};
+ for(const[id,n]of Object.entries(NOVOS)){z.file('audio/'+id+'.mp3',n.mp3);todos[id]=n.meta}
+ /* remove da lista as orações que não existem mais no site */
+ for(const id of Object.keys(todos))if(!ITENS.some(o=>o.id===id))delete todos[id];
+ z.file('audio/vozes.json',JSON.stringify(todos));
+ const b=await z.generateAsync({type:'blob'}),a=document.createElement('a');
+ a.href=URL.createObjectURL(b);a.download='amein-vozes-'+new Date().toISOString().slice(0,10)+'.zip';a.click();
+ log('Pacote baixado. Copie os arquivos da pasta "audio" do pacote para a pasta "audio" do site (substituir) e publique.');
+};
+inicia();
+</script>
+</body>
+</html>

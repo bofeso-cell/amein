@@ -1,0 +1,9 @@
+# Regras de cache do Netlify
+/sw.js
+  Cache-Control: no-cache
+/audio/vozes.json
+  Cache-Control: no-cache
+/audio/*.mp3
+  Cache-Control: public, max-age=2592000
+/gerador-voz.html
+  X-Robots-Tag: noindex
